@@ -1,10 +1,14 @@
+require('dotenv').config(); //at the top
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const ejs = require("ejs");
 const encrypt = require("mongoose-encryption") //level 2 encrytion
 
+
 const app = express();
+
+// console.log(process.env.SECRET); // SECRET KEYS
 
 app.set('view engine', 'ejs');
 
@@ -20,8 +24,8 @@ app.use(bodyParser.urlencoded({
       password: String
   })
 
-  const secret = "ThisisOurLittleSecret" //This is the encryption key.Easy to hack as of now
-  userSchema.plugin(encrypt, {secret: secret ,encryptedFields: ["password"]})  //lvl 2 encryption plugin
+ //This is the encryption key.Easy to hack as of now
+  userSchema.plugin(encrypt, {secret: process.env.SECRET ,encryptedFields: ["password"]})  //lvl 2 encryption plugin
 
   const User = mongoose.model('User', userSchema);
 
