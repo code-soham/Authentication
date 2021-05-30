@@ -3,12 +3,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const ejs = require("ejs");
-const encrypt = require("mongoose-encryption") //level 2 encrytion
-
+const bcrypt = require("bcrypt"); //requiring bcrypt hashing algorithm package
+const saltRounds = 10; //number of rounds of salting
 
 const app = express();
-
-// console.log(process.env.SECRET); // SECRET KEYS
 
 app.set('view engine', 'ejs');
 
@@ -24,9 +22,6 @@ app.use(bodyParser.urlencoded({
       password: String
   })
 
- //This is the encryption key.Easy to hack as of now
-  userSchema.plugin(encrypt, {secret: process.env.SECRET ,encryptedFields: ["password"]})  //lvl 2 encryption plugin
-
   const User = mongoose.model('User', userSchema);
 
 app.get("/" , (req , res)=>{
@@ -36,23 +31,26 @@ app.get("/register" , (req , res)=>{
     res.render("register");
 })
 app.post("/register" , (req,res)=>{
-    const newUser = new User({
-        email: req.body.username,
-        password: req.body.password
-    })
-
-    newUser.save(function(err) {
-        if(err){
-            console.log(err);
-        }else{
-            res.render("secret");
-        }
-    })
+    bcrypt.hash(req.body.password, saltRounds, function(err, hash) { //registering 
+        const newUser = new User({
+            email: req.body.username,
+            password: hash
+        })
+    
+        newUser.save(function(err) {
+            if(err){
+                console.log(err);
+            }else{
+                res.render("secret");
+            }
+        })
+    });
+    
 })
 app.get("/login" , (req , res)=>{
     res.render("login");
 })
-app.post("/login",(req,res)=>{
+app.post("/login",(req,res)=>{                   //login.find the code in the bcryt package
     const username = req.body.username;
     const password = req.body.password;
 
@@ -61,9 +59,11 @@ app.post("/login",(req,res)=>{
             console.log(err);
         }else{
             if (foundUser) {
-                if (foundUser.password === password) {
-                    res.render("secret");
-                }
+                bcrypt.compare(password, foundUser.password, function(err, result) {
+                    if(result === true){
+                        res.render("secret");
+                    }
+                });
             }
         }
     })
